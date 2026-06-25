@@ -1,0 +1,49 @@
+[build-system]
+# maturin is the build backend: it compiles the Rust crate (via cargo) and
+# packages the resulting extension module into a wheel. Nothing else is needed
+# at build time — maturin pulls in cargo through the system Rust toolchain.
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "pyrust-template"
+version = "0.1.0"
+description = "A template for writing custom Python modules in Rust with PyO3"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Your Name", email = "you@example.com" }]
+keywords = ["pyo3", "rust", "maturin", "extension", "template", "native"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+# Install with: pip install -e ".[dev]"
+dev = [
+    "pytest>=7.0",
+    "numpy>=1.21",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourname/pyrust_template"
+Issues = "https://github.com/yourname/pyrust_template/issues"
+
+# ---------------------------------------------------------------------------
+# maturin: this is a "mixed" Rust/Python project. Pure-Python source lives
+# under python/, and the compiled Rust module is dropped in beside it as
+# `pyrust_template._core`.
+# ---------------------------------------------------------------------------
+[tool.maturin]
+python-source = "python"
+module-name = "pyrust_template._core"
+# Enable PyO3's extension-module feature ONLY at build time. Leaving it out of
+# Cargo.toml keeps `cargo test` able to link against libpython.
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

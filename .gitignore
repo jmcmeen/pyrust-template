@@ -1,0 +1,34 @@
+# Compiled extension modules
+*.so
+*.pyd
+*.dylib
+
+# Rust / Cargo build artifacts
+/target/
+
+# Cargo.lock — omitted for a reusable template/library so consumers resolve
+# fresh. Commit it instead if you fork this into an application (it pins exact
+# dependency versions for reproducible builds).
+Cargo.lock
+
+# Build artifacts
+build/
+dist/
+wheelhouse/
+*.egg-info/
+.eggs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

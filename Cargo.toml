@@ -1,0 +1,21 @@
+[package]
+name = "pyrust_template"
+version = "0.1.0"
+edition = "2021"
+description = "A template for writing custom Python modules in Rust with PyO3"
+license = "MIT"
+
+# The compiled extension module. Its name MUST match the #[pymodule] function
+# in src/lib.rs (here: `_core`) and the `module-name` in pyproject.toml.
+#
+#   cdylib  -> a C-compatible dynamic library, which is what Python imports.
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+# NOTE: the `extension-module` feature is intentionally NOT enabled here.
+# Enabling it would stop PyO3 from linking libpython, which breaks `cargo test`
+# (the test binary needs Python symbols). maturin turns it on at build time via
+# `tool.maturin.features` in pyproject.toml — see that file.
+pyo3 = { version = "0.22" }
