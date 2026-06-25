@@ -1,0 +1,11 @@
+[package]
+name = "mathops"
+version = "0.1.0"
+edition = "2021"
+description = "Pure-Rust logic for pyrust_template (no Python dependency)"
+license = "MIT"
+
+# A normal Rust library: no PyO3, no libpython. Because its tests link no
+# Python, `cargo test` runs them on every platform with no rpath/dyld setup.
+[lib]
+name = "mathops"

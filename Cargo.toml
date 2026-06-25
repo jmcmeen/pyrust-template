@@ -9,13 +9,31 @@ license = "MIT"
 # in src/lib.rs (here: `_core`) and the `module-name` in pyproject.toml.
 #
 #   cdylib  -> a C-compatible dynamic library, which is what Python imports.
+#
+# test/doctest = false: this crate is ONLY the PyO3 binding layer and has no
+# Rust tests. Disabling its test harness keeps `cargo test` from building an
+# executable that links libpython — such a binary fails to load on macOS
+# framework Python ("@rpath/Python3.framework... no LC_RPATH"). The pure logic
+# and all `cargo test` tests live in the `mathops` crate, which links no Python.
 [lib]
 name = "_core"
 crate-type = ["cdylib"]
+test = false
+doctest = false
 
 [dependencies]
+# The pure-Rust logic, with no PyO3 dependency. See crates/mathops.
+mathops = { path = "crates/mathops" }
 # NOTE: the `extension-module` feature is intentionally NOT enabled here.
-# Enabling it would stop PyO3 from linking libpython, which breaks `cargo test`
-# (the test binary needs Python symbols). maturin turns it on at build time via
-# `tool.maturin.features` in pyproject.toml — see that file.
+# maturin turns it on at build time via `tool.maturin.features` in
+# pyproject.toml — see that file.
 pyo3 = { version = "0.22" }
+
+# This is both a package (the `_core` extension maturin builds) and the root of
+# a workspace whose only extra member is the pure-logic crate. `default-members`
+# lists both so a plain `cargo test` runs the mathops tests (the `.` package has
+# none — see test = false above).
+[workspace]
+members = ["crates/mathops"]
+default-members = [".", "crates/mathops"]
+resolver = "2"

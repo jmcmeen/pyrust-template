@@ -27,7 +27,7 @@ build:  ## Rebuild the compiled extension in place (after editing Rust)
 test:  ## Run the Python test suite
 	uv run pytest
 
-cargo-test:  ## Run the pure-Rust unit tests in math_ops.rs
+cargo-test:  ## Run the pure-Rust unit tests (in the mathops crate)
 	cargo test
 
 demo:  ## Run the example script

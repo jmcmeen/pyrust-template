@@ -1,8 +1,10 @@
-// math_ops.rs
+// mathops — pure Rust logic with no Python/PyO3 dependency.
 //
-// Pure Rust logic with no PyO3 dependency. Keeping your real logic free of
-// binding code makes it independently testable (see the `#[cfg(test)]` block
-// at the bottom, runnable with `cargo test`) and reusable from other Rust.
+// Keeping the real logic in its own crate (free of binding code) makes it
+// independently testable and reusable. Because nothing here links libpython,
+// `cargo test` runs these tests on every platform with no extra setup. The
+// PyO3 binding crate (`_core`, in ../../src/lib.rs) depends on this crate and
+// wraps these items for Python.
 
 /// Add two integers.
 pub fn add(a: i64, b: i64) -> i64 {
@@ -30,7 +32,7 @@ pub fn cumulative_sum(values: &[f64]) -> Vec<f64> {
 }
 
 /// A running total you can keep adding to. Plain Rust — no PyO3 here. The
-/// binding layer (src/lib.rs) wraps this in a `#[pyclass]`.
+/// binding layer wraps this in a `#[pyclass]`.
 pub struct Accumulator {
     total: f64,
 }

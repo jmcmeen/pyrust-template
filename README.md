@@ -1,4 +1,4 @@
-# pyrust_template
+# pyrust-template
 
 A complete, batteries-included template for writing **custom Python modules in Rust**
 using [PyO3](https://pyo3.rs/) and [maturin](https://www.maturin.rs/). Clone it,
@@ -68,11 +68,12 @@ e.g. `make dev PYTHON=3.11`.
 ```text
 pyrust_template/
 ├── pyproject.toml              # Build system + metadata (start here)
-├── Cargo.toml                  # Rust crate config (the compiled module)
+├── Cargo.toml                  # `_core` extension + Cargo workspace root
 ├── Makefile                    # Convenience commands
-├── src/
-│   ├── lib.rs                  # PyO3 bindings (Rust <-> Python glue)
-│   └── math_ops.rs             # Pure Rust logic (no PyO3) + cargo tests
+├── src/lib.rs                  # PyO3 bindings (Rust <-> Python glue)
+├── crates/mathops/
+│   ├── Cargo.toml
+│   └── src/lib.rs              # Pure Rust logic (no PyO3) + cargo tests
 ├── python/pyrust_template/
 │   ├── __init__.py             # Python wrapper; re-exports the Rust symbols
 │   ├── _core.pyi               # Type stubs for editors / mypy
@@ -82,54 +83,62 @@ pyrust_template/
 └── .github/workflows/ci.yml    # Build & test on Linux/macOS/Windows
 ```
 
-**The key idea:** keep real logic in plain Rust (`math_ops.rs`) with no PyO3
-imports, and confine all Python-binding code to `lib.rs`. Your logic stays
-reusable and independently testable with `cargo test`; the binding file is a
-thin translation layer.
+**The key idea:** keep real logic in a plain-Rust crate (`mathops`) with no PyO3
+dependency, and confine all Python-binding code to the `_core` crate (`src/lib.rs`).
+Your logic stays reusable and independently testable with `cargo test`; the
+binding file is a thin translation layer. (Splitting into two crates is also
+what makes `cargo test` portable — see below.)
 
 ## How it fits together
 
 1. `pyproject.toml` declares the build backend (`maturin`) and, under
    `[tool.maturin]`, that this is a mixed project: Python source under
    `python/`, with the compiled module dropped in as `pyrust_template._core`.
-2. `Cargo.toml` builds the crate as a `cdylib` named `_core`.
-3. `lib.rs`'s `#[pymodule] fn _core(...)` block exposes Rust functions and
+2. `Cargo.toml` builds the root crate as a `cdylib` named `_core`, and depends
+   on the pure-logic `mathops` crate.
+3. `src/lib.rs`'s `#[pymodule] fn _core(...)` block exposes Rust functions and
    classes to Python. This function name **must** match the `[lib] name` in
    `Cargo.toml` and the `module-name` in `pyproject.toml`.
 4. `__init__.py` re-exports those symbols so users write
    `from pyrust_template import add`.
 
-> **Why `extension-module` is not a default feature in `Cargo.toml`:** PyO3's
-> `extension-module` feature stops it from linking libpython, which is needed
-> for a Python-loaded `.so` but *breaks* `cargo test` (the test binary needs
-> those symbols). So it is enabled only at build time via
-> `tool.maturin.features` in `pyproject.toml`, leaving `cargo test` working.
+> **Why two crates?** The `_core` crate links libpython (PyO3 needs it). A
+> `cargo test` on such a crate builds a test *executable* that loads libpython
+> at startup — which fails on, e.g., macOS framework Python with a
+> `@rpath/Python3.framework... no LC_RPATH` dyld error. Putting the real logic
+> (and its `cargo test` tests) in the separate `mathops` crate, which links no
+> Python, sidesteps that entirely: those tests run on every platform. The
+> `_core` crate carries no Rust tests and sets `test = false` so cargo never
+> builds that fragile harness. PyO3's `extension-module` feature (which would
+> stop libpython from linking, but breaks linking the test exe on Linux) is
+> therefore left off in `Cargo.toml` and enabled only at build time via
+> `tool.maturin.features` in `pyproject.toml`.
 
 ## Customizing for your own module
 
 1. **Rename the package.** Replace `pyrust_template` everywhere it appears:
    the `python/pyrust_template/` directory, and the strings in `pyproject.toml`,
-   `Cargo.toml`, `__init__.py`, and the tests. The `_core` name (the
-   `#[pymodule]` function, `[lib] name`, and `module-name` suffix) can stay.
+   `Cargo.toml`, `__init__.py`, and the tests. The `_core` and `mathops` crate
+   names (and the `#[pymodule]` function / `module-name` suffix `_core`) can stay.
 
    ```bash
    git grep -l pyrust_template   # find every occurrence
    ```
 
-2. **Add your Rust.** Put logic in a module under `src/` (e.g. `math_ops.rs`),
-   declared with `mod my_module;` in `lib.rs`.
+2. **Add your Rust.** Put logic in the `mathops` crate
+   (`crates/mathops/src/lib.rs`) — keep it free of PyO3 so it stays testable.
 
 3. **Bind it.** Add a `#[pyfunction]` (functions) or `#[pyclass]` +
-   `#[pymethods]` (classes) in `lib.rs`, register it inside the `#[pymodule]`
-   block with `m.add_function(...)` / `m.add_class::<...>()`, then mirror the
-   signature in `_core.pyi`.
+   `#[pymethods]` (classes) in `src/lib.rs` that calls into `mathops`, register
+   it inside the `#[pymodule]` block with `m.add_function(...)` /
+   `m.add_class::<...>()`, then mirror the signature in `_core.pyi`.
 
 4. **Rebuild.** Re-run `uv pip install -e .` (or `make build`). Editable
    installs do **not** auto-recompile Rust — you must rebuild after changing any
    `.rs` file.
 
 5. **Test.** Add Python cases under `tests/` (`uv run pytest`) and pure-Rust
-   cases in a `#[cfg(test)]` module (`cargo test`).
+   cases in a `#[cfg(test)]` module inside `crates/mathops` (`cargo test`).
 
 ## Binding cheat sheet
 
